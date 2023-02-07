@@ -2,29 +2,6 @@
 #     """ oo way
 #     """
 
-# def calc(string):
-#     """ recursive way
-#     """
-#     def get_components(tokens):
-#         """
-#         divide tokens into several components of same level,
-#         the level of + -
-#         """
-#         components = []
-# 
-#     def eval(tokens):
-#         pass
-# 
-#     tokens = get_tokens(string)
-#     stack = []
-
-
-def calc(string):
-    def eval(tokens):
-        """ eval just calculates the same level expression
-        """
-
-
 def get_tokens(s):
     def int(s):
         ans = 0
@@ -48,6 +25,127 @@ def get_tokens(s):
             tokens.append(int(num))
 
     return tokens
+
+
+def calc_recursion(string):
+    """
+    >>> calc_recursion('(1)')
+    1
+    >>> calc_recursion('-(1)')
+    -1
+    >>> calc_recursion('(-1)')
+    -1
+    >>> calc_recursion('1+ 1')
+    2
+    >>> calc_recursion('10 + 210')
+    220
+    >>> calc_recursion('- 11 + 210')
+    199
+    >>> calc_recursion('1+ 1-2*7/3')
+    -2
+    >>> calc_recursion('10+ 12-2*7/3')
+    18
+    >>> calc_recursion('-(1+(4+5+2)-3)+(6+8)')
+    5
+    >>> calc_recursion('-(-10 + ((-100*22/74-50/11*10-1)*3 -2)) + 54')
+    279
+    >>> calc_recursion('-(-10 + ((-100*22/74-50/11*10-1)*3 -2)) + 54*-1*-1')
+    279
+    >>> calc_recursion('-(-10 +--((-100*22/74-50/11*10-1)*3 -2)) + 54*-1*-1')
+    279
+    >>> calc_recursion('-+---1')
+    1
+    >>> calc_recursion('---1 + ---+-1')
+    0
+
+    """
+    
+    def eval_expression(tokens):
+        operators = tokens[-2::-2]
+        operands = tokens[-1::-2]
+
+        # this doesn't seem like a good approach
+        # it mixes '*/' and '+-' on a single logical line
+        # separating it into different parts could be better
+        # because '*/' and '-+' are different though have similar logic, if 
+        # the part of same logic needs to be reused, the different part 
+        # must be taken out, and there should be a little more complex structure of design
+        # in fact, you have to manually operate '*/', and '-+'
+        # So, here, though the same logic works for both cases, it's just a trick, which
+        # just squeezed two things together, just so. Consequently, program become bloated,
+        # with every logic going through some code they never need.
+        while operators:
+            operator = operators.pop()
+            left, right = operands.pop(), operands.pop()
+
+            if operator == '*':
+                operands.append(left * right)
+            elif operator == '/':
+                operands.append(left // right)
+            elif operator == '+':
+                operands.append(left + right)
+            elif operator == '-':
+                operands.append(left - right)
+
+        return operands[0]
+
+    def value(tokens):
+        v = tokens.pop()
+        while tokens:
+            sign = tokens.pop()
+            v *= [-1, 1][sign == '+']
+        return v
+
+    def next_value(tokens):
+        stack = []
+        while isinstance((tk := tokens.pop()), str):
+            stack.append(tk)
+        else:
+            stack.append(tk)
+        return value(stack)
+
+    def eval(tokens):
+        stack = []
+        i = 0
+        t = []
+        for tk in tokens:
+            if tk == '(':
+                i += 1
+
+            if i == 0:
+                stack.append(tk)
+            else:
+                t.append(tk)
+
+            if tk == ')':
+                i -= 1
+                if i == 0:
+                    stack.append(eval(t[1:-1]))
+                    t = []
+
+        stack.reverse()
+        two_level_stack = [[next_value(stack)]]
+        while stack:
+            operator, operand = stack.pop(), next_value(stack)
+            if operator in '*/':
+                two_level_stack[-1].append(operator)
+                two_level_stack[-1].append(operand)
+            elif operator in '+-':
+                two_level_stack.append(operator)
+                two_level_stack.append([operand])
+
+        one_level_stack = [eval_expression(two_level_stack[0])]
+        for i in range(1, len(two_level_stack), 2):
+            one_level_stack.append(two_level_stack[i])
+            one_level_stack.append(eval_expression(two_level_stack[i+1]))
+
+        res = eval_expression(one_level_stack)
+
+        return res
+
+    tokens = get_tokens(string)
+    ret = eval(tokens)
+    return ret
 
 
 def calc_brutalforce(string):
@@ -197,6 +295,8 @@ def calc_by_priority(string):
     >>> calc_by_priority('-(-10 + ((-100*22/74-50/11*10-1)*3 -2)) + 54')
     279
     >>> calc_by_priority('-(-10 + ((-100*22/74-50/11*10-1)*3 -2)) + 54*-1*-1')
+    279
+    >>> calc_by_priority('-(-10 +--((-100*22/74-50/11*10-1)*3 -2)) + 54*-1*-1')
     279
     >>> calc_by_priority('-+---1')
     1
