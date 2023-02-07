@@ -1,11 +1,6 @@
-# def calc(string):
-#     """ oo way
-#     """
-
 def get_tokens(s):
     def int(s):
         ans = 0
-
         for i in range(len(s)):
             ans += (ord(s[-i-1]) - ord('0')) * 10**i
         return ans
@@ -25,6 +20,139 @@ def get_tokens(s):
             tokens.append(int(num))
 
     return tokens
+
+
+def validate_string(string):
+    """
+    >>> validate_string('-1000000')
+    (True, '')
+    >>> validate_string('1000000')
+    (True, '')
+    >>> validate_string('(1)')
+    (True, '')
+    >>> validate_string('-(1)')
+    (True, '')
+    >>> validate_string('10+ 12-2*7/3')
+    (True, '')
+    >>> validate_string('-(1+(4+5+2)-3)+(6+8)')
+    (True, '')
+    >>> validate_string('-(-10 + ((-100*22/74-50/11*10-1)*3 -2)) + 54')
+    (True, '')
+    >>> validate_string('-(-10 + ((-100*   22/74-    50/11*10-1)*3 -2)) + 54*-1*-1')
+    (True, '')
+    >>> validate_string('---1 + ---+-1')
+    (True, '')
+    >>> validate_string('((((((1))))))')
+    (True, '')
+    >>> validate_string('1-')
+    (False, 'wrong expression')
+    >>> validate_string('10+ 12-2*7/3-')
+    (False, 'wrong expression')
+    >>> validate_string('(((((())))))')
+    (False, 'wrong expression')
+    >>> validate_string('-(1+(4+5+2-3)+(6+8)')
+    (False, 'wrong expression')
+    >>> validate_string('-))(1+(4+5+2-3+(6+8')
+    (False, 'wrong expression')
+    >>> validate_string('asdf+908+8888')
+    (False, 'wrong expression')
+    >>> validate_string('asdf+908+8888.999')
+    (False, 'wrong expression')
+    >>> validate_string('1+2*(((((())))))-1')
+    (False, 'wrong expression')
+    >>> validate_string('10+ 12-2*7/*3')
+    (False, 'wrong expression')
+    >>> validate_string('10+ 12-*2*7*3')
+    (False, 'wrong expression')
+
+    """
+
+    def validate_characters(string):
+        for c in string:
+            if c not in '()+-*/0123456789 ':
+                return False
+        return True
+        
+    def validate_parentheses(tokens):
+        pair = 0
+        for token in tokens:
+            if token == '(':
+                pair += 1
+            elif token == ')':
+                pair -= 1
+        return pair == 0
+
+    def validate_value(tokens):
+        signs = tokens[:-1]
+        num = tokens[-1:]
+        return (
+                all(sign in '-+' for sign in signs)
+            and len(num) == 1
+            and isinstance(num[0], int)
+        )
+
+    def validate_expr(tokens):
+        if not tokens:
+            return False
+
+        operators = []
+        operands = []
+
+        stack = []
+        for tk in tokens:
+            if len(operators) == len(operands):
+                if isinstance(tk, int):
+                    stack.append(tk)
+                    operands.append(stack)
+                    stack = []
+                else:
+                    stack.append(tk)
+            else:
+                operators.append(tk)
+        else:
+            if stack:
+                operands.append(stack)
+
+        return (
+                all(operator in '+-*/' for operator in operators)
+            and all(validate_value(operand) for operand in operands)
+            and len(operands)-len(operators) == 1
+        )
+
+
+    def validate(tokens):
+        stack = []
+        pair = 0
+        parentheses = []
+        for tk in tokens:
+            if tk == '(':
+                pair += 1
+
+            if pair == 0:
+                stack.append(tk)
+            else:
+                parentheses.append(tk)
+
+            if tk == ')':
+                pair -= 1
+                if pair == 0:
+                    if not validate(parentheses[1:-1]):
+                        return False
+                    stack.append(0)
+                    parentheses = []
+
+        return validate_expr(stack)
+
+    if not validate_characters(string):
+        return False, "wrong expression"
+
+    tokens = get_tokens(string)
+    if not validate_parentheses(tokens):
+        return False, 'wrong expression'
+    elif not validate(tokens):
+        return False, "wrong expression"
+
+    return True, ''
 
 
 def calc_recursion(string):
