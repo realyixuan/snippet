@@ -1,5 +1,10 @@
 """
 
+reference:
+    https://aosabook.org/en/500L/a-python-interpreter-written-in-python.html
+    https://compilerbook.com/
+
+
 the procedures:
 
     lexer -> parser -> ast -> compiler -> virtual machine
